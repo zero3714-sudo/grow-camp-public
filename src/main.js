@@ -2766,13 +2766,13 @@ class MainScene extends Phaser.Scene {
         960,
         525,
         'ending_book_bg'
-      ).setDisplaySize(1560, 880)
+      ).setDisplaySize(1620, 910)
 
       objects.push(endingBookBg)
 
       objects.push(
-        scene.add.text(960, 98, 'ENDING BOOK', {
-          fontSize: '44px',
+        scene.add.text(960, 160, 'ENDING BOOK', {
+          fontSize: '34px',
           color: '#fff6e8',
           fontStyle: 'bold',
           letterSpacing: 2,
@@ -2780,40 +2780,44 @@ class MainScene extends Phaser.Scene {
         }).setOrigin(0.5)
       )
 
-      objects.push(
-        scene.add.text(960, 135, '기록된 결말과 단서를 확인합니다', {
-          fontSize: '16px',
-          color: '#f4e1c0',
-          padding: { left: 8, right: 8, top: 4, bottom: 4 }
-        }).setOrigin(0.5)
-      )
-
       function addStatChip(x, y, width, label, value, fillColor, strokeColor) {
-        const base = scene.add.rectangle(x, y, width, 54, fillColor, 0.95)
+        const base = scene.add.rectangle(x, y, width, 56, fillColor, 0.95)
           .setStrokeStyle(3, strokeColor)
-        const labelText = scene.add.text(x - width / 2 + 24, y, label, {
-          fontSize: '18px',
+        const labelText = scene.add.text(x - width / 2 + 20, y, label, {
+          fontSize: '16px',
           color: '#fff8ee',
-          fontStyle: 'bold'
+          fontStyle: 'bold',
+          padding: {
+            left: 2,
+            right: 2,
+            top: 10,
+            bottom: 10
+          }
         }).setOrigin(0, 0.5)
 
         const valueBadge = scene.add.rectangle(
-          x + width / 2 - 58,
+          x + width / 2 - 48,
           y,
-          92,
-          34,
+          76,
+          32,
           0xfff4d8,
           0.95
         ).setStrokeStyle(2, 0xe0c48c)
 
         const valueText = scene.add.text(
-          x + width / 2 - 58,
+          x + width / 2 - 48,
           y,
           value,
           {
-            fontSize: '18px',
+            fontSize: '16px',
             color: '#5d4632',
-            fontStyle: 'bold'
+            fontStyle: 'bold',
+            padding: {
+              left: 2,
+              right: 2,
+              top: 8,
+              bottom: 8
+            }
           }
         ).setOrigin(0.5)
 
@@ -2822,9 +2826,9 @@ class MainScene extends Phaser.Scene {
 
       // 각 페이지에 하나씩만 배치해서 책 중앙부가 답답해 보이지 않도록 한다.
       addStatChip(
-        585,
-        190,
-        360,
+        535,
+        236,
+        288,
         '발견한 엔딩',
         `${discoveredCount} / 6`,
         0x6f5845,
@@ -2832,9 +2836,9 @@ class MainScene extends Phaser.Scene {
       )
 
       addStatChip(
-        1335,
-        190,
-        360,
+        1385,
+        236,
+        288,
         '누적 단서',
         `${hintCount} / 10`,
         0x546b63,
@@ -2842,12 +2846,12 @@ class MainScene extends Phaser.Scene {
       )
 
       const positions = [
-        { x: 585, y: 350 },
-        { x: 1335, y: 350 },
-        { x: 585, y: 560 },
-        { x: 1335, y: 560 },
-        { x: 585, y: 770 },
-        { x: 1335, y: 770 }
+        { x: 620, y: 360 },
+        { x: 1300, y: 360 },
+        { x: 620, y: 545 },
+        { x: 1300, y: 545 },
+        { x: 620, y: 730 },
+        { x: 1300, y: 730 }
       ]
 
       const accentMap = {
@@ -2868,8 +2872,8 @@ class MainScene extends Phaser.Scene {
         const cardShadow = scene.add.rectangle(
           pos.x + 8,
           pos.y + 8,
-          692,
-          202,
+          612,
+          160,
           0x000000,
           0.12
         )
@@ -2878,8 +2882,8 @@ class MainScene extends Phaser.Scene {
         const card = scene.add.rectangle(
           pos.x,
           pos.y,
-          690,
-          198,
+          608,
+          156,
           discovered ? 0xfff7e9 : 0xd9d2c7,
           1
         ).setStrokeStyle(
@@ -2889,27 +2893,27 @@ class MainScene extends Phaser.Scene {
         objects.push(card)
 
         const accentBar = scene.add.rectangle(
-          pos.x - 323,
+          pos.x - 284,
           pos.y,
-          18,
-          184,
+          14,
+          144,
           discovered ? accent.fill : 0x958f88,
           1
         )
         objects.push(accentBar)
 
         const emblem = scene.add.circle(
-          pos.x - 265,
-          pos.y - 52,
-          30,
+          pos.x - 232,
+          pos.y - 38,
+          25,
           discovered ? accent.fill : 0xa29b92,
           1
         ).setStrokeStyle(3, discovered ? accent.border : 0x7e776f)
         objects.push(emblem)
 
         objects.push(
-          scene.add.text(pos.x - 265, pos.y - 52, accent.mark, {
-            fontSize: '18px',
+          scene.add.text(pos.x - 232, pos.y - 38, accent.mark, {
+            fontSize: '16px',
             color: discovered ? '#fffaf0' : '#f4eee5',
             fontStyle: 'bold'
           }).setOrigin(0.5)
@@ -2922,8 +2926,8 @@ class MainScene extends Phaser.Scene {
         const statusTextColor = discovered ? '#fff8ef' : '#f0ece7'
 
         objects.push(
-          scene.add.text(pos.x - 220, pos.y - 69, displayTitle, {
-            fontSize: '27px',
+          scene.add.text(pos.x - 190, pos.y - 48, displayTitle, {
+            fontSize: '22px',
             color: '#3d332a',
             fontStyle: 'bold',
             padding: { left: 8, right: 8, top: 12, bottom: 6 }
@@ -2931,26 +2935,26 @@ class MainScene extends Phaser.Scene {
         )
 
         const statusChip = scene.add.rectangle(
-          pos.x + 250,
-          pos.y - 64,
-          118,
-          34,
+          pos.x + 208,
+          pos.y - 45,
+          100,
+          28,
           statusFill,
           0.96
         ).setStrokeStyle(2, discovered ? accent.border : 0x726c65)
         objects.push(statusChip)
 
         objects.push(
-          scene.add.text(pos.x + 250, pos.y - 64, statusLabel, {
-            fontSize: '15px',
+          scene.add.text(pos.x + 208, pos.y - 45, statusLabel, {
+            fontSize: '13px',
             color: statusTextColor,
             fontStyle: 'bold'
           }).setOrigin(0.5)
         )
 
         objects.push(
-          scene.add.text(pos.x - 220, pos.y - 31, displaySubtitle, {
-            fontSize: '18px',
+          scene.add.text(pos.x - 190, pos.y - 15, displaySubtitle, {
+            fontSize: '15px',
             color: '#6c5d50',
             padding: { left: 8, right: 8, top: 10, bottom: 6 }
           }).setOrigin(0, 0.5)
@@ -2981,76 +2985,38 @@ class MainScene extends Phaser.Scene {
         }
 
         const hintPanel = scene.add.rectangle(
-          pos.x - 2,
-          pos.y + 42,
-          560,
-          90,
+          pos.x - 1,
+          pos.y + 34,
+          492,
+          68,
           discovered ? 0xf8efdd : 0xebe4da,
           0.96
         ).setStrokeStyle(2, discovered ? 0xe1ceb0 : 0xd0c7ba)
         objects.push(hintPanel)
 
         objects.push(
-          scene.add.text(pos.x - 272, pos.y + 4, hintLines.join('\n'), {
-            fontSize: '17px',
+          scene.add.text(pos.x - 238, pos.y + 4, hintLines.join('\n'), {
+            fontSize: '14px',
             color: '#4e4338',
-            wordWrap: { width: 530 },
-            lineSpacing: 8,
-            padding: { left: 8, right: 8, top: 10, bottom: 6 }
+            wordWrap: { width: 458 },
+            lineSpacing: 4,
+            padding: { left: 7, right: 7, top: 7, bottom: 5 }
           }).setOrigin(0, 0)
         )
       })
 
-      const closeShadow = scene.add.rectangle(
-        960,
-        958,
-        246,
-        64,
-        0x000000,
-        0.18
-      )
-      objects.push(closeShadow)
-
-      const closeButton = scene.add.rectangle(
-        960,
-        952,
-        240,
-        58,
-        0x6b5847,
-        0.98
-      ).setStrokeStyle(4, 0xf5dfb5)
-        .setInteractive({ useHandCursor: true })
-
-      const closeText = scene.add.text(960, 952, '닫기', {
-        fontSize: '25px',
-        color: '#fffaf1',
-        fontStyle: 'bold',
-        padding: { left: 8, right: 8, top: 10, bottom: 6 }
-      }).setOrigin(0.5)
-
-      // endingbook.png에 X 그림이 포함되어 있으므로
-      // 기존 위치에는 투명 클릭 영역만 둔다.
+      // endingbook.png 우상단의 X 장식에 맞춘 투명 클릭 영역.
+      // 하단 닫기 버튼은 제거하고, X 클릭만으로 닫는다.
       const miniCloseButton = scene.add.rectangle(
-        1650,
-        110,
-        72,
-        72,
+        1645,
+        165,
+        76,
+        76,
         0x000000,
         0
       ).setInteractive({ useHandCursor: true })
 
-      ;[closeButton, closeText, miniCloseButton].forEach(target => {
-        target.on?.('pointerdown', closeEndingBook)
-      })
-
-      closeButton.on('pointerover', () => {
-        closeButton.setScale(1.03)
-        closeText.setScale(1.03)
-      })
-      closeButton.on('pointerout', () => {
-        closeButton.setScale(1)
-        closeText.setScale(1)
-      })
+      miniCloseButton.on('pointerdown', closeEndingBook)
 
       miniCloseButton.on('pointerover', () => {
         miniCloseButton.setScale(1.06)
@@ -3059,7 +3025,7 @@ class MainScene extends Phaser.Scene {
         miniCloseButton.setScale(1)
       })
 
-      objects.push(closeButton, closeText, miniCloseButton)
+      objects.push(miniCloseButton)
 
       bookOverlay = scene.add.container(0, 0, objects).setDepth(1000)
     }
