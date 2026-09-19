@@ -621,7 +621,7 @@ class MainScene extends Phaser.Scene {
         realTitle: 'HIDDEN ENDING',
         subtitle: '늦게 온 해결사',
         hints: [
-          '모든 이야기가 끝난 뒤에도, 아직 도착하지 않은 손님이 있을지 모른다.'
+          '준비가 다 됐는데도 도착하지 않은 캠핑카? 마지막 선택을 캠핑카로 남겨두면 무언가 늦게 도착할지도 모른다.'
         ]
       }
     ]
@@ -2741,118 +2741,250 @@ class MainScene extends Phaser.Scene {
       bookOpen = true
       const objects = []
 
+      const discoveredCount = Object.values(progress.endings).filter(Boolean).length
+      const hintCount = Math.min(progress.resetCount, 10)
+
       const shade = scene.add.rectangle(
         960,
         540,
         1920,
         1080,
-        0x000000,
-        0.72
+        0x09110d,
+        0.82
       ).setInteractive()
       objects.push(shade)
 
-      const panel = scene.add.rectangle(
-        960,
-        525,
-        1580,
-        900,
-        0xf2ead7,
-        0.98
-      ).setStrokeStyle(10, 0x584939)
-      objects.push(panel)
+      // 뒷그림자
+      objects.push(
+        scene.add.rectangle(974, 546, 1590, 910, 0x000000, 0.24)
+      )
+
+      // 책 바깥 프레임
+      objects.push(
+        scene.add.rectangle(960, 525, 1560, 880, 0x5b4635, 0.98)
+          .setStrokeStyle(10, 0xd7bf8e)
+      )
+
+      // 책 속지
+      objects.push(
+        scene.add.rectangle(960, 525, 1516, 836, 0xf3ead8, 1)
+          .setStrokeStyle(4, 0xe4d2ad)
+      )
+
+      // 중앙 책등
+      objects.push(
+        scene.add.rectangle(960, 525, 24, 820, 0xe0c89f, 0.85)
+      )
+      objects.push(
+        scene.add.rectangle(960, 525, 8, 820, 0xc9ab7a, 0.9)
+      )
+
+      // 상단 장식 띠
+      objects.push(
+        scene.add.rectangle(960, 114, 520, 78, 0x745846, 0.98)
+          .setStrokeStyle(4, 0xf4dfb3)
+      )
+      objects.push(
+        scene.add.rectangle(960, 114, 486, 54, 0x8a6a54, 0.94)
+      )
 
       objects.push(
-        scene.add.text(960, 105, 'ENDING BOOK', {
-          fontSize: '52px',
-          color: '#3e342b',
-          padding: { left: 8, right: 8, top: 12, bottom: 8 }
+        scene.add.text(960, 98, 'ENDING BOOK', {
+          fontSize: '44px',
+          color: '#fff6e8',
+          fontStyle: 'bold',
+          letterSpacing: 2,
+          padding: { left: 10, right: 10, top: 8, bottom: 4 }
         }).setOrigin(0.5)
       )
 
-      const discoveredCount = Object.values(progress.endings).filter(Boolean).length
-
       objects.push(
-        scene.add.text(960, 162, `${discoveredCount} / 6 발견`, {
-          fontSize: '27px',
-          color: '#79624c',
-          padding: { left: 8, right: 8, top: 12, bottom: 8 }
+        scene.add.text(960, 135, '기록된 결말과 단서를 확인합니다', {
+          fontSize: '16px',
+          color: '#f4e1c0',
+          padding: { left: 8, right: 8, top: 4, bottom: 4 }
         }).setOrigin(0.5)
       )
 
-      const hintCount = Math.min(progress.resetCount, 10)
+      function addStatChip(x, y, width, label, value, fillColor, strokeColor) {
+        const base = scene.add.rectangle(x, y, width, 54, fillColor, 0.95)
+          .setStrokeStyle(3, strokeColor)
+        const labelText = scene.add.text(x - width / 2 + 24, y, label, {
+          fontSize: '18px',
+          color: '#fff8ee',
+          fontStyle: 'bold'
+        }).setOrigin(0, 0.5)
 
-      objects.push(
-        scene.add.text(960, 205, `RESET으로 얻은 단서 : ${hintCount} / 10`, {
-          fontSize: '20px',
-          color: '#75685c',
-          padding: { left: 8, right: 8, top: 12, bottom: 8 }
-        }).setOrigin(0.5)
+        const valueBadge = scene.add.rectangle(
+          x + width / 2 - 58,
+          y,
+          92,
+          34,
+          0xfff4d8,
+          0.95
+        ).setStrokeStyle(2, 0xe0c48c)
+
+        const valueText = scene.add.text(
+          x + width / 2 - 58,
+          y,
+          value,
+          {
+            fontSize: '18px',
+            color: '#5d4632',
+            fontStyle: 'bold'
+          }
+        ).setOrigin(0.5)
+
+        objects.push(base, labelText, valueBadge, valueText)
+      }
+
+      // 각 페이지에 하나씩만 배치해서 책 중앙부가 답답해 보이지 않도록 한다.
+      addStatChip(
+        585,
+        190,
+        360,
+        '발견한 엔딩',
+        `${discoveredCount} / 6`,
+        0x6f5845,
+        0xf1ddaf
+      )
+
+      addStatChip(
+        1335,
+        190,
+        360,
+        '누적 단서',
+        `${hintCount} / 10`,
+        0x546b63,
+        0xd7e8d9
       )
 
       const positions = [
-        { x: 580, y: 345 },
-        { x: 1340, y: 345 },
-        { x: 580, y: 555 },
-        { x: 1340, y: 555 },
-        { x: 580, y: 765 },
-        { x: 1340, y: 765 }
+        { x: 585, y: 350 },
+        { x: 1335, y: 350 },
+        { x: 585, y: 560 },
+        { x: 1335, y: 560 },
+        { x: 585, y: 770 },
+        { x: 1335, y: 770 }
       ]
+
+      const accentMap = {
+        miko: { fill: 0xd58d72, border: 0x8e5140, emblem: 0xfff2da, mark: '01' },
+        maid: { fill: 0x85a06f, border: 0x556747, emblem: 0xf3ffe8, mark: '02' },
+        ghost: { fill: 0x7e93b8, border: 0x536683, emblem: 0xf1f6ff, mark: '03' },
+        alchemist: { fill: 0xb48761, border: 0x80593b, emblem: 0xfff3e3, mark: '04' },
+        fail: { fill: 0x9a8369, border: 0x6f5c49, emblem: 0xfff4e5, mark: '05' },
+        hidden: { fill: 0x8a6bb4, border: 0x5b437b, emblem: 0xf8efff, mark: 'EX' }
+      }
 
       BOOK_INFO.forEach((info, index) => {
         const pos = positions[index]
         const discovered = progress.endings[info.key]
+        const accent = accentMap[info.key] || accentMap.hidden
+
+        // 카드 그림자
+        const cardShadow = scene.add.rectangle(
+          pos.x + 8,
+          pos.y + 8,
+          692,
+          202,
+          0x000000,
+          0.12
+        )
+        objects.push(cardShadow)
 
         const card = scene.add.rectangle(
           pos.x,
           pos.y,
-          670,
-          180,
-          discovered ? 0xfff4cf : 0xd4cec3
+          690,
+          198,
+          discovered ? 0xfff7e9 : 0xd9d2c7,
+          1
         ).setStrokeStyle(
-          5,
-          discovered ? 0xb99145 : 0x8b857d
+          4,
+          discovered ? accent.border : 0x8a837a
         )
         objects.push(card)
 
-        const displayTitle = discovered ? info.realTitle : '???'
-        const displaySubtitle = discovered ? info.subtitle : '????????'
+        const accentBar = scene.add.rectangle(
+          pos.x - 323,
+          pos.y,
+          18,
+          184,
+          discovered ? accent.fill : 0x958f88,
+          1
+        )
+        objects.push(accentBar)
+
+        const emblem = scene.add.circle(
+          pos.x - 265,
+          pos.y - 52,
+          30,
+          discovered ? accent.fill : 0xa29b92,
+          1
+        ).setStrokeStyle(3, discovered ? accent.border : 0x7e776f)
+        objects.push(emblem)
 
         objects.push(
-          scene.add.text(pos.x - 300, pos.y - 65, `${index + 1}. ${displayTitle}`, {
+          scene.add.text(pos.x - 265, pos.y - 52, accent.mark, {
+            fontSize: '18px',
+            color: discovered ? '#fffaf0' : '#f4eee5',
+            fontStyle: 'bold'
+          }).setOrigin(0.5)
+        )
+
+        const displayTitle = discovered ? info.realTitle : '???'
+        const displaySubtitle = discovered ? info.subtitle : '정체불명의 결말'
+        const statusLabel = discovered ? 'DISCOVERED' : 'LOCKED'
+        const statusFill = discovered ? accent.fill : 0x8b857d
+        const statusTextColor = discovered ? '#fff8ef' : '#f0ece7'
+
+        objects.push(
+          scene.add.text(pos.x - 220, pos.y - 69, displayTitle, {
             fontSize: '27px',
             color: '#3d332a',
-            padding: { left: 8, right: 8, top: 14, bottom: 8 }
+            fontStyle: 'bold',
+            padding: { left: 8, right: 8, top: 12, bottom: 6 }
           }).setOrigin(0, 0.5)
         )
 
+        const statusChip = scene.add.rectangle(
+          pos.x + 250,
+          pos.y - 64,
+          118,
+          34,
+          statusFill,
+          0.96
+        ).setStrokeStyle(2, discovered ? accent.border : 0x726c65)
+        objects.push(statusChip)
+
         objects.push(
-          scene.add.text(
-            pos.x + 295,
-            pos.y - 65,
-            discovered ? '✓ 발견' : '미발견',
-            {
-              fontSize: '20px',
-              color: discovered ? '#956900' : '#777777',
-              padding: { left: 8, right: 8, top: 12, bottom: 8 }
-            }
-          ).setOrigin(1, 0.5)
+          scene.add.text(pos.x + 250, pos.y - 64, statusLabel, {
+            fontSize: '15px',
+            color: statusTextColor,
+            fontStyle: 'bold'
+          }).setOrigin(0.5)
         )
 
         objects.push(
-          scene.add.text(pos.x - 300, pos.y - 27, displaySubtitle, {
+          scene.add.text(pos.x - 220, pos.y - 31, displaySubtitle, {
             fontSize: '18px',
-            color: '#66594d',
-            padding: { left: 8, right: 8, top: 12, bottom: 8 }
+            color: '#6c5d50',
+            padding: { left: 8, right: 8, top: 10, bottom: 6 }
           }).setOrigin(0, 0.5)
         )
 
         const hintLines = []
 
         if (info.key === 'hidden') {
-          if (normalFiveComplete()) {
-            hintLines.push(`단서 : ${info.hints[0]}`)
+          if (progress.resetCount >= HINT_UNLOCK_ORDER.length) {
+            hintLines.push(`히든 단서 : ${info.hints[0]}`)
           } else {
-            hintLines.push('단서 : 다른 결말들을 먼저 찾아보자.')
+            const remain = HINT_UNLOCK_ORDER.length - Math.min(
+              progress.resetCount,
+              HINT_UNLOCK_ORDER.length
+            )
+            hintLines.push(`히든 단서 : 일반 단서를 ${remain}개 더 모으면 열린다.`)
           }
         } else {
           const unlocked = getUnlockedHints(info.key)
@@ -2866,34 +2998,93 @@ class MainScene extends Phaser.Scene {
           }
         }
 
+        const hintPanel = scene.add.rectangle(
+          pos.x - 2,
+          pos.y + 42,
+          560,
+          90,
+          discovered ? 0xf8efdd : 0xebe4da,
+          0.96
+        ).setStrokeStyle(2, discovered ? 0xe1ceb0 : 0xd0c7ba)
+        objects.push(hintPanel)
+
         objects.push(
-          scene.add.text(pos.x - 300, pos.y + 10, hintLines.join('\n'), {
-            fontSize: '18px',
-            color: '#493f36',
-            wordWrap: { width: 590 },
+          scene.add.text(pos.x - 272, pos.y + 4, hintLines.join('\n'), {
+            fontSize: '17px',
+            color: '#4e4338',
+            wordWrap: { width: 530 },
             lineSpacing: 8,
-            padding: { left: 8, right: 8, top: 12, bottom: 8 }
+            padding: { left: 8, right: 8, top: 10, bottom: 6 }
           }).setOrigin(0, 0)
         )
       })
 
+      const closeShadow = scene.add.rectangle(
+        960,
+        958,
+        246,
+        64,
+        0x000000,
+        0.18
+      )
+      objects.push(closeShadow)
+
       const closeButton = scene.add.rectangle(
         960,
-        960,
+        952,
         240,
-        60,
-        0x655647
-      ).setStrokeStyle(4, 0xffffff)
+        58,
+        0x6b5847,
+        0.98
+      ).setStrokeStyle(4, 0xf5dfb5)
         .setInteractive({ useHandCursor: true })
 
-      const closeText = scene.add.text(960, 960, '닫기', {
+      const closeText = scene.add.text(960, 952, '닫기', {
         fontSize: '25px',
-        color: '#ffffff',
-        padding: { left: 8, right: 8, top: 12, bottom: 8 }
+        color: '#fffaf1',
+        fontStyle: 'bold',
+        padding: { left: 8, right: 8, top: 10, bottom: 6 }
       }).setOrigin(0.5)
 
-      closeButton.on('pointerdown', closeEndingBook)
-      objects.push(closeButton, closeText)
+      const miniCloseButton = scene.add.rectangle(
+        1650,
+        110,
+        54,
+        54,
+        0x6b5847,
+        0.98
+      ).setStrokeStyle(3, 0xf3ddb0)
+        .setInteractive({ useHandCursor: true })
+
+      const miniCloseText = scene.add.text(1650, 110, '×', {
+        fontSize: '34px',
+        color: '#fff8ef',
+        fontStyle: 'bold'
+      }).setOrigin(0.5)
+
+      ;[closeButton, closeText, miniCloseButton, miniCloseText].forEach(target => {
+        target.on?.('pointerdown', closeEndingBook)
+      })
+
+      closeButton.on('pointerover', () => {
+        closeButton.setScale(1.03)
+        closeText.setScale(1.03)
+      })
+      closeButton.on('pointerout', () => {
+        closeButton.setScale(1)
+        closeText.setScale(1)
+      })
+
+      miniCloseButton.on('pointerover', () => {
+        miniCloseButton.setScale(1.06)
+        miniCloseText.setScale(1.06)
+      })
+      miniCloseButton.on('pointerout', () => {
+        miniCloseButton.setScale(1)
+        miniCloseText.setScale(1)
+      })
+
+      objects.push(closeButton, closeText, miniCloseButton, miniCloseText)
 
       bookOverlay = scene.add.container(0, 0, objects).setDepth(1000)
     }
