@@ -2,29 +2,41 @@ import Phaser from 'phaser'
 import './style.css'
 
 // =====================================================
-// 장비 이미지 에셋
-// GitHub raw 주소에서 직접 로드
-// 이미지 교체 후 캐시가 남으면 ASSET_VERSION 숫자만 올리면 됨
+// 게임 에셋 경로 - grow-camp-public/public/assets 하나로 통일
+// Vite / StackBlitz / GitHub Pages 모두 같은 로컬 에셋을 사용
+// 이미지 교체 후 캐시가 남으면 *_ASSET_VERSION 숫자만 올리면 됨
 // =====================================================
-const EQUIPMENT_ASSET_BASE =
-  'https://raw.githubusercontent.com/zero3714-sudo/grow-camp/main/public/assets/equipment'
+const ASSET_BASE = `${import.meta.env.BASE_URL}assets`
 
-const CHARACTER_ASSET_BASE =
-  'https://raw.githubusercontent.com/zero3714-sudo/grow-camp/main/public/assets/characters'
+const EQUIPMENT_ASSET_BASE = `${ASSET_BASE}/equipment`
+const CHARACTER_ASSET_BASE = `${ASSET_BASE}/characters`
+const BACKGROUND_ASSET_BASE = ASSET_BASE
+const UI_ICON_ASSET_BASE = `${ASSET_BASE}/ui`
 
-const EQUIPMENT_ASSET_VERSION = '2'
-const CHARACTER_ASSET_VERSION = '5'
-
-const BACKGROUND_ASSET_BASE =
-  'https://raw.githubusercontent.com/zero3714-sudo/grow-camp/main/public/assets'
-
-const BACKGROUND_ASSET_VERSION = '4'
+const EQUIPMENT_ASSET_VERSION = '3'
+const CHARACTER_ASSET_VERSION = '6'
+const BACKGROUND_ASSET_VERSION = '5'
+const UI_ICON_ASSET_VERSION = '4'
 
 const BACKGROUND_FILES = {
   1: 'background_1.png', // 낮 - 1~3턴
   2: 'background_2.png', // 석양 - 4~6턴
   3: 'background_3.png', // 밤 - 7~10턴
   4: 'background_4.png'  // 일반 엔딩 1~4 연출
+}
+
+
+const UI_ICON_FILES = {
+  shrineMaiden: 'shrineMaiden_icon.png',
+  maid: 'maid_icon.png',
+  ghost: 'ghost_icon.png',
+  alchemist: 'alchemist_icon.png',
+  camperVan: 'camperVan_icon.png',
+  campfire: 'campfire_icon.png',
+  tent: 'tent_icon.png',
+  cookware: 'cookware_icon.png',
+  lantern: 'lantern_icon.png',
+  telescope: 'telescope_icon.png'
 }
 
 const EQUIPMENT_ASSET_NAMES = [
@@ -107,6 +119,13 @@ class MainScene extends Phaser.Scene {
       this.load.image(
         `background_${index}`,
         `${BACKGROUND_ASSET_BASE}/${filename}?v=${BACKGROUND_ASSET_VERSION}`
+      )
+    })
+
+    Object.entries(UI_ICON_FILES).forEach(([key, filename]) => {
+      this.load.image(
+        `ui_${key}`,
+        `${UI_ICON_ASSET_BASE}/${filename}?v=${UI_ICON_ASSET_VERSION}`
       )
     })
 
@@ -724,7 +743,6 @@ class MainScene extends Phaser.Scene {
     let gameConfirmModal = null
 
     const campItems = []
-    const history = []
     const selectionOrder = []
 
     // 한 번 일반 엔딩 루트가 완성되면 이후 상호작용 연출은
@@ -877,43 +895,175 @@ class MainScene extends Phaser.Scene {
 
     // =====================================================
     // 시스템 버튼
+    // RESET / ENDING BOOK - 얇은 테두리 + 반투명 다크 패널
     // =====================================================
-    function makeSystemButton(x, text, color, width = 150) {
-      const button = scene.add.rectangle(x, 55, width, 60, color)
-        .setStrokeStyle(4, 0xffffff)
+    function makeSystemButton(
+      x,
+      text,
+      accentColor,
+      width = 150,
+      icon = ''
+    ) {
+      const height = 50
+      const radius = 14
+
+      const shadow = scene.add.graphics()
+      shadow.fillStyle(0x101813, 0.26)
+      shadow.fillRoundedRect(
+        -width / 2,
+        -height / 2 + 4,
+        width,
+        height,
+        radius
+      )
+
+      const panel = scene.add.graphics()
+      panel.fillStyle(0x1e2924, 0.88)
+      panel.fillRoundedRect(
+        -width / 2,
+        -height / 2,
+        width,
+        height,
+        radius
+      )
+
+      // 은은한 크림색 외곽선
+      panel.lineStyle(2, 0xfff0d8, 0.58)
+      panel.strokeRoundedRect(
+        -width / 2,
+        -height / 2,
+        width,
+        height,
+        radius
+      )
+
+      // 버튼별 포인트 컬러
+      panel.fillStyle(accentColor, 0.95)
+      panel.fillRoundedRect(
+        -width / 2 + 9,
+        -height / 2 + 10,
+        4,
+        height - 20,
+        2
+      )
+
+      // 마우스 오버 시 살짝 밝아지는 레이어
+      const hoverGlow = scene.add.graphics()
+      hoverGlow.fillStyle(0xffffff, 0.12)
+      hoverGlow.fillRoundedRect(
+        -width / 2 + 2,
+        -height / 2 + 2,
+        width - 4,
+        height - 4,
+        radius - 2
+      )
+      hoverGlow.setAlpha(0)
+
+      const iconText = scene.add.text(
+        -width / 2 + 29,
+        0,
+        icon,
+        {
+          fontSize: text === 'ENDING BOOK' ? '19px' : '22px',
+          color: '#f7dec2',
+          fontStyle: 'bold'
+        }
+      ).setOrigin(0.5)
+
+      const labelX = icon ? 8 : 0
+      const label = scene.add.text(
+        labelX,
+        0,
+        text,
+        {
+          fontSize: text === 'ENDING BOOK' ? '20px' : '21px',
+          color: '#fffaf2',
+          fontStyle: 'bold',
+          letterSpacing: 1
+        }
+      ).setOrigin(0.5)
+
+      const button = scene.add.container(
+        x,
+        55,
+        [shadow, panel, hoverGlow, iconText, label]
+      )
+        .setSize(width, height)
         .setInteractive({ useHandCursor: true })
         .setDepth(500)
 
-      const label = scene.add.text(x, 55, text, {
-        fontSize: '23px',
-        color: '#ffffff'
-      }).setOrigin(0.5).setDepth(501)
-
       button.on('pointerover', () => {
-        button.setScale(1.05)
-        label.setScale(1.05)
+        scene.tweens.killTweensOf(button)
+        scene.tweens.killTweensOf(hoverGlow)
+
+        scene.tweens.add({
+          targets: button,
+          scaleX: 1.035,
+          scaleY: 1.035,
+          duration: 120,
+          ease: 'Sine.Out'
+        })
+
+        scene.tweens.add({
+          targets: hoverGlow,
+          alpha: 1,
+          duration: 120,
+          ease: 'Sine.Out'
+        })
       })
 
       button.on('pointerout', () => {
-        button.setScale(1)
-        label.setScale(1)
+        scene.tweens.killTweensOf(button)
+        scene.tweens.killTweensOf(hoverGlow)
+
+        scene.tweens.add({
+          targets: button,
+          scaleX: 1,
+          scaleY: 1,
+          duration: 140,
+          ease: 'Sine.Out'
+        })
+
+        scene.tweens.add({
+          targets: hoverGlow,
+          alpha: 0,
+          duration: 140,
+          ease: 'Sine.Out'
+        })
+      })
+
+      button.on('pointerdown', () => {
+        scene.tweens.killTweensOf(button)
+        scene.tweens.add({
+          targets: button,
+          scaleX: 0.975,
+          scaleY: 0.975,
+          duration: 65,
+          ease: 'Sine.Out'
+        })
+      })
+
+      button.on('pointerup', () => {
+        scene.tweens.killTweensOf(button)
+        scene.tweens.add({
+          targets: button,
+          scaleX: 1.035,
+          scaleY: 1.035,
+          duration: 90,
+          ease: 'Sine.Out'
+        })
       })
 
       return button
     }
 
-    const undoButton = makeSystemButton(105, 'UNDO', 0x607f9f)
-    const resetButton = makeSystemButton(275, 'RESET', 0xa45c55)
-
-    // DEBUG ONLY - 개발 모드에서만 표시
-    const debugResetBookButton = DEBUG_SHOW_INTERACTION_POINTS
-      ? makeSystemButton(
-          1240,
-          'RESET BOOK',
-          0x8a3f3f,
-          220
-        )
-      : null
+    const resetButton = makeSystemButton(
+      105,
+      'RESET',
+      0xd77b72,
+      142,
+      '↻'
+    )
 
     const turnText = scene.add.text(1490, 55, 'TURN 0 / 10', {
       fontSize: '30px',
@@ -923,8 +1073,9 @@ class MainScene extends Phaser.Scene {
     const bookButton = makeSystemButton(
       1745,
       'ENDING BOOK',
-      0x66517d,
-      260
+      0x9b82c7,
+      238,
+      '✦'
     )
 
     const messageText = scene.add.text(
@@ -1103,6 +1254,8 @@ class MainScene extends Phaser.Scene {
         container,
         button: null,
         buttonText: null,
+        buttonIcon: null,
+        buttonSelectedGlow: null,
         wanderRunning: false,
         currentNodeIndex: null,
         nextNodeIndex: null,
@@ -1227,10 +1380,18 @@ class MainScene extends Phaser.Scene {
           item.button.disableInteractive()
           item.button.setAlpha(0.55)
           if (item.buttonText) item.buttonText.setAlpha(0.55)
+          if (item.buttonIcon) item.buttonIcon.setAlpha(0.55)
+          if (item.buttonSelectedGlow) item.buttonSelectedGlow.setAlpha(
+            item.selected ? 0.55 : 0
+          )
         } else {
           item.button.setInteractive({ useHandCursor: true })
           item.button.setAlpha(1)
           if (item.buttonText) item.buttonText.setAlpha(1)
+          if (item.buttonIcon) item.buttonIcon.setAlpha(1)
+          if (item.buttonSelectedGlow) item.buttonSelectedGlow.setAlpha(
+            item.selected ? 1 : 0
+          )
         }
       })
     }
@@ -2193,30 +2354,57 @@ class MainScene extends Phaser.Scene {
     const row2 = 980
 
     function makeItemButton(x, y, item) {
-      const button = scene.add.rectangle(x, y, 320, 95, 0xe8d7af)
-        .setStrokeStyle(5, 0x66543e)
+      const button = scene.add.rectangle(x, y, 300, 88, 0x26322a)
+        .setStrokeStyle(3, 0xf1dfbd)
         .setInteractive({ useHandCursor: true })
         .setDepth(210)
 
-      const text = scene.add.text(x, y, `${item.id}. ${item.name}`, {
-        fontSize: '27px',
-        color: '#382e25'
-      }).setOrigin(0.5).setDepth(211)
+      const icon = scene.add.image(x, y, `ui_${item.key}`)
+        .setDepth(211)
+
+      const selectedGlow = scene.add.circle(
+        x + 124,
+        y - 31,
+        7,
+        0xffd66b,
+        0
+      ).setDepth(212)
+
+      item.buttonSelectedGlow = selectedGlow
+
+      if (icon.width > 0 && icon.height > 0) {
+        const maxSize = 74
+        const iconScale = Math.min(
+          maxSize / icon.width,
+          maxSize / icon.height
+        )
+        icon.setScale(iconScale)
+      }
 
       item.button = button
-      item.buttonText = text
+      item.buttonText = null
+      item.buttonIcon = icon
+      item.buttonSelectedGlow = selectedGlow
 
       button.on('pointerdown', () => selectItem(item))
 
       button.on('pointerover', () => {
         if (bottomInputLocked) return
-        button.setScale(1.04)
-        text.setScale(1.04)
+        button.setScale(1.035)
+        icon.setScale(icon.scaleX * 1.035, icon.scaleY * 1.035)
       })
 
       button.on('pointerout', () => {
         button.setScale(1)
-        text.setScale(1)
+
+        if (icon.width > 0 && icon.height > 0) {
+          const maxSize = 74
+          const iconScale = Math.min(
+            maxSize / icon.width,
+            maxSize / icon.height
+          )
+          icon.setScale(iconScale)
+        }
       })
     }
 
@@ -2251,29 +2439,19 @@ class MainScene extends Phaser.Scene {
         }
 
         if (item.button) {
-          item.button.setFillStyle(item.selected ? 0xc69c42 : 0xe8d7af)
+          item.button.setFillStyle(item.selected ? 0x66583b : 0x26322a)
+          item.button.setStrokeStyle(
+            item.selected ? 5 : 3,
+            item.selected ? 0xffe6a3 : 0xf1dfbd
+          )
+
+          if (item.buttonSelectedGlow) {
+            item.buttonSelectedGlow.setAlpha(item.selected ? 1 : 0)
+          }
         }
       })
     }
 
-    // =====================================================
-    // UNDO 기록
-    // =====================================================
-    function saveHistory() {
-      history.push({
-        turn,
-        selectionOrder: [...selectionOrder],
-        items: campItems.map(item => ({
-          level: item.level,
-          selected: item.selected,
-          x: item.container.x,
-          y: item.container.y,
-          currentNodeIndex: item.currentNodeIndex,
-          lastNodeIndex: item.lastNodeIndex,
-          atHome: item.atHome
-        }))
-      })
-    }
 
     // =====================================================
     // 엔딩 판정
@@ -2385,10 +2563,9 @@ class MainScene extends Phaser.Scene {
       return best
     }
 
-    function refreshConfirmedEndingFocus(forceRecompute = false) {
+    function refreshConfirmedEndingFocus() {
       // 한 번 루트 포커스가 확정되면 일반 진행 중에는 바꾸지 않는다.
-      // UNDO 때만 이전 턴 기준으로 다시 계산한다.
-      if (confirmedEndingFocus && !forceRecompute) return
+      if (confirmedEndingFocus) return
 
       const winner = getConfirmedNormalEnding(selectionOrder)
 
@@ -3738,7 +3915,6 @@ class MainScene extends Phaser.Scene {
       messageText.setText(`${item.name} 연출 중...`)
 
       const sequenceToken = ++actionSequenceToken
-      saveHistory()
 
       // 현재 설치되어 있는 장비들의 성장을 예약만 해둔다.
       // 실제 레벨 증가는 이번 턴 상호작용이 끝난 뒤.
@@ -3782,89 +3958,6 @@ class MainScene extends Phaser.Scene {
     }
 
     // =====================================================
-    // UNDO
-    // =====================================================
-    undoButton.on('pointerdown', () => {
-      // 히든 엔딩 진입 이후에는 UNDO로 일반 상태로 되돌릴 수 없다.
-      // 새 게임은 엔딩 화면의 리셋 확인을 통해서만 시작한다.
-      if (hiddenSequenceRunning || hiddenEndingVisualLocked) return
-
-      if (bookOpen) {
-        closeEndingBook()
-        return
-      }
-
-      if (history.length === 0) {
-        messageText.setText('되돌릴 행동이 없습니다')
-        return
-      }
-
-      actionSequenceToken += 1
-      clearBottomUnlockTimer()
-      setBottomInputLocked(false)
-
-      if (endingOverlay) {
-        endingOverlay.destroy(true)
-        endingOverlay = null
-      }
-
-      if (gameConfirmModal) {
-        gameConfirmModal.destroy(true)
-        gameConfirmModal = null
-      }
-
-      gameOver = false
-      hiddenSequenceRunning = false
-      endingResetConfirmOpen = false
-      const previous = history.pop()
-
-      getCharacters().forEach(character => {
-        cancelCharacterMovement(character)
-        releaseActionReservation(character)
-        character.wanderRunning = false
-      })
-
-      clearAllReservations()
-
-      turn = previous.turn
-      selectionOrder.length = 0
-      selectionOrder.push(...previous.selectionOrder)
-      confirmedEndingFocus = null
-      refreshConfirmedEndingFocus(true)
-
-      campItems.forEach((item, index) => {
-        item.level = previous.items[index].level
-        item.selected = previous.items[index].selected
-        item.container.x = previous.items[index].x
-        item.container.y = previous.items[index].y
-        item.currentNodeIndex = previous.items[index].currentNodeIndex
-        item.lastNodeIndex = previous.items[index].lastNodeIndex
-        item.atHome =
-          item.type === 'character'
-            ? (previous.items[index].atHome ?? previous.items[index].currentNodeIndex === null)
-            : false
-        item.nextNodeIndex = null
-        item.plannedTarget = null
-        item.actionReservation = null
-      })
-
-      refreshVisuals()
-      syncBackgroundToTurn(false)
-
-      getCharacters().forEach(character => {
-        if (character.atHome) {
-          setCharacterIdle(character)
-        } else {
-          character.statusText.setText(
-            character.selected ? 'ACTIVE' : '대기중'
-          )
-        }
-      })
-
-      messageText.setText('한 단계 되돌렸습니다')
-    })
-
-    // =====================================================
     // RESET / BOOK
     // =====================================================
     resetButton.on('pointerdown', () => {
@@ -3885,28 +3978,6 @@ class MainScene extends Phaser.Scene {
 
     bookButton.on('pointerdown', openEndingBook)
 
-    // DEBUG ONLY - 개발 모드에서만 존재
-    if (debugResetBookButton) {
-      debugResetBookButton.on('pointerdown', () => {
-        if (gameConfirmModal) return
-
-        openGameConfirm({
-          title: 'DEBUG 초기화',
-          message: '도감과 힌트 진행도를\n전부 초기화할까요?',
-          confirmText: '초기화',
-          cancelText: '취소',
-          onConfirm: () => {
-            try {
-              localStorage.removeItem(STORAGE_KEY)
-            } catch (error) {
-              console.warn('초기화 실패', error)
-            }
-
-            scene.scene.restart()
-          }
-        })
-      })
-    }
 
     // =====================================================
     // 시작
