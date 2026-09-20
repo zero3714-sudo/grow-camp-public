@@ -14,7 +14,7 @@ const BACKGROUND_ASSET_BASE = ASSET_BASE
 const UI_ICON_ASSET_BASE = `${ASSET_BASE}/ui`
 
 const EQUIPMENT_ASSET_VERSION = '3'
-const CHARACTER_ASSET_VERSION = '6'
+const CHARACTER_ASSET_VERSION = '7'
 const BACKGROUND_ASSET_VERSION = '5'
 const UI_ICON_ASSET_VERSION = '4'
 const ENDING_BOOK_ASSET_VERSION = '1'
@@ -154,8 +154,14 @@ class MainScene extends Phaser.Scene {
       const hiddenUrl =
         `${CHARACTER_ASSET_BASE}/${hiddenKey}.png?v=${CHARACTER_ASSET_VERSION}`
 
+      // 작업 중 보여줄 160x160 뒷모습 단일 PNG
+      const workKey = `${name}_work`
+      const workUrl =
+        `${CHARACTER_ASSET_BASE}/${workKey}.png?v=${CHARACTER_ASSET_VERSION}`
+
       this.load.image(idleKey, idleUrl)
       this.load.image(hiddenKey, hiddenUrl)
+      this.load.image(workKey, workUrl)
     })
 
     // 히든 캐릭터 전용 에셋
@@ -1483,6 +1489,136 @@ class MainScene extends Phaser.Scene {
       }
     }
 
+
+    // =====================================================
+    // 캐릭터 작업 자세
+    // *_work.png = 160x160 단일 뒷모습 PNG
+    //
+    // 순간이동으로 행동 슬롯에 도착한 뒤
+    // idle -> 짧은 페이드 -> work 뒷모습 -> 작업 연출 -> idle 복귀
+    // 순서로 보여준다.
+    // =====================================================
+    function setCharacterWorkPose(character, equipment, onComplete) {
+      if (!character?.characterSprite || hiddenEndingVisualLocked) {
+        onComplete?.(false)
+        return
+      }
+
+      const sprite = character.characterSprite
+      const workTextureKey = `${character.key}_work`
+      const workTexture = scene.textures.get(workTextureKey)
+
+      // work 이미지가 누락돼도 게임 진행은 유지한다.
+      if (!workTexture || workTexture.key === '__MISSING') {
+        console.warn(
+          `[GROW CAMP] 작업 캐릭터 텍스처 없음: ${workTextureKey}`
+        )
+        onComplete?.(false)
+        return
+      }
+
+      scene.tweens.killTweensOf(sprite)
+
+      // 앞모습 idle이 자연스럽게 사라진 뒤 뒷모습으로 교체.
+      scene.tweens.add({
+        targets: sprite,
+        alpha: 0.15,
+        scaleX: sprite.scaleX * 0.96,
+        scaleY: sprite.scaleY * 0.96,
+        duration: 90,
+        ease: 'Sine.In',
+        onComplete: () => {
+          sprite.stop()
+          sprite.setTexture(workTextureKey)
+
+          // 기존 캐릭터와 동일하게 "발 위치" 기준으로 정렬.
+          sprite.setOrigin(0.5, 0.88)
+          sprite.setPosition(0, 12)
+          sprite.setAngle(0)
+          sprite.setTint(CHARACTER_SCENE_TINT)
+
+          if (sprite.height > 0) {
+            const scale = CHARACTER_DISPLAY_HEIGHT / sprite.height
+            sprite.setScale(scale)
+          }
+
+          // 작업 이미지의 좌우 비대칭 소품이 장비 쪽을 향하도록 미러링.
+          if (equipment?.container) {
+            sprite.setFlipX(equipment.container.x < character.container.x)
+          } else {
+            sprite.setFlipX(false)
+          }
+
+          sprite.setAlpha(0.15)
+
+          scene.tweens.add({
+            targets: sprite,
+            alpha: 1,
+            duration: 100,
+            ease: 'Sine.Out',
+            onComplete: () => onComplete?.(true)
+          })
+        }
+      })
+    }
+
+    function playCharacterWorkMotion(character, onComplete) {
+      if (!character?.characterSprite) {
+        onComplete?.()
+        return
+      }
+
+      const sprite = character.characterSprite
+
+      // 정적인 뒷모습 1장에 아주 작은 상하/회전 Tween만 넣어
+      // 실제로 손을 쓰며 작업하는 것처럼 보이게 한다.
+      scene.tweens.add({
+        targets: sprite,
+        y: 8,
+        angle: sprite.flipX ? 1.5 : -1.5,
+        duration: 150,
+        yoyo: true,
+        repeat: 2,
+        ease: 'Sine.InOut',
+        onComplete: () => {
+          sprite.setY(12)
+          sprite.setAngle(0)
+          onComplete?.()
+        }
+      })
+    }
+
+    function restoreCharacterIdleFromWork(character, onComplete) {
+      if (!character?.characterSprite || hiddenEndingVisualLocked) {
+        onComplete?.()
+        return
+      }
+
+      const sprite = character.characterSprite
+      scene.tweens.killTweensOf(sprite)
+
+      scene.tweens.add({
+        targets: sprite,
+        alpha: 0.15,
+        duration: 90,
+        ease: 'Sine.In',
+        onComplete: () => {
+          sprite.setAngle(0)
+          sprite.setY(12)
+          playCharacterIdle(character)
+          sprite.setAlpha(0.15)
+
+          scene.tweens.add({
+            targets: sprite,
+            alpha: 1,
+            duration: 110,
+            ease: 'Sine.Out',
+            onComplete: () => onComplete?.()
+          })
+        }
+      })
+    }
+
     function showHiddenEndingCharacter(character) {
       if (!character.characterSprite) return
 
@@ -2087,25 +2223,24 @@ class MainScene extends Phaser.Scene {
 
       character.statusText.setText(actionName)
 
-      // 임시 Action 애니메이션: 살짝 위아래로 움직임
-      scene.tweens.add({
-        targets: character.container,
-        y: character.container.y - 8,
-        duration: 170,
-        yoyo: true,
-        repeat: 2,
-        ease: 'Sine.InOut',
-        onComplete: () => {
+      // 행동 슬롯에 도착한 뒤 앞모습 idle에서 작업용 뒷모습으로 전환.
+      setCharacterWorkPose(character, equipment, () => {
+        playCharacterWorkMotion(character, () => {
+          // 실제 변화는 작업 모션의 끝에서 발생시켜
+          // '캐릭터가 만짐 -> 오브젝트가 반응함' 순서가 읽히게 한다.
           pulseEquipment(equipment)
           showInteractionEffect(equipment, interaction)
           spawnCharacterInteractionParticles(character, equipment)
 
-          scene.time.delayedCall(300, () => {
-            showCharacterReaction(character)
-            character.statusText.setText('ACTIVE')
-            onComplete()
+          scene.time.delayedCall(260, () => {
+            // 작업이 끝나면 다시 앞모습 idle로 돌아온 뒤 ! 반응.
+            restoreCharacterIdleFromWork(character, () => {
+              showCharacterReaction(character)
+              character.statusText.setText('ACTIVE')
+              onComplete()
+            })
           })
-        }
+        })
       })
     }
 
@@ -4122,7 +4257,7 @@ class MainScene extends Phaser.Scene {
     syncBackgroundToTurn(false)
 
     getCharacters().forEach(character => setCharacterIdle(character))
-    console.log('GROW CAMP MOVE: teleport + 4 interaction slots per equipment')
+    console.log('GROW CAMP MOVE: teleport + back-view work interaction')
   }
 }
 
