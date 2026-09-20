@@ -49,6 +49,64 @@ const EQUIPMENT_ASSET_NAMES = [
   'telescope'
 ]
 
+// 장비별 특수 분기 오브젝트.
+// 파일명은 사용자가 업로드한 실제 파일명과 1:1로 맞춘다.
+const SPECIAL_EQUIPMENT_FILES = {
+  alchemy_cauldron: 'alchemy_cauldron.png',
+  ghost_lantern: 'ghost_lantern.png',
+  ghost_tent: 'ghost_tent.png',
+  ritual_brazier: 'ritual_brazier.png',
+  glamping_tent: 'glamping_tent.png',
+  mobile_alchemy_lab: 'mobile_alchemy_lab.png',
+  maid_campervan: 'maid_campervan.png',
+  shrine_telescope: 'shrine_telescope.png'
+}
+
+// 특정 캐릭터가 특정 장비와 상호작용했을 때만 팝업/고정되는 특수 장비 분기.
+// 한 번 분기된 특수 오브젝트는 히든 엔딩 전까지 다른 조건으로 덮어쓰지 않는다.
+const SPECIAL_EQUIPMENT_BRANCHES = {
+  '4-8': {
+    textureKey: 'alchemy_cauldron',
+    label: '연금술 항아리',
+    width: 168
+  },
+  '3-9': {
+    textureKey: 'ghost_lantern',
+    label: '유령 랜턴',
+    width: 108
+  },
+  '3-7': {
+    textureKey: 'ghost_tent',
+    label: '유령 텐트',
+    width: 250
+  },
+  '1-6': {
+    textureKey: 'ritual_brazier',
+    label: '제례 화로',
+    width: 172
+  },
+  '2-7': {
+    textureKey: 'glamping_tent',
+    label: '글램핑 텐트',
+    width: 250
+  },
+  '4-5': {
+    textureKey: 'mobile_alchemy_lab',
+    label: '이동 연금 연구소',
+    width: 220
+  },
+  '2-5': {
+    textureKey: 'maid_campervan',
+    label: '메이드 캠핑카',
+    width: 220
+  },
+  '1-10': {
+    textureKey: 'shrine_telescope',
+    label: '무녀 망원경',
+    width: 178
+  }
+}
+
 const CHARACTER_ASSET_NAMES = [
   'shrineMaiden',
   'maid',
@@ -143,6 +201,13 @@ class MainScene extends Phaser.Scene {
 
         this.load.image(key, url)
       }
+    })
+
+    Object.entries(SPECIAL_EQUIPMENT_FILES).forEach(([key, filename]) => {
+      this.load.image(
+        key,
+        `${EQUIPMENT_ASSET_BASE}/${filename}?v=${EQUIPMENT_ASSET_VERSION}`
+      )
     })
 
     CHARACTER_ASSET_NAMES.forEach(name => {
@@ -1276,7 +1341,13 @@ class MainScene extends Phaser.Scene {
         actionReservation: null,
         movementToken: 0,
         atHome: def.type === 'character',
-        equipmentTextureStage: def.type === 'equipment' ? 1 : null
+        equipmentTextureStage: null,
+        specialObjectKey: null,
+        specialObjectLabel: null,
+        specialObjectLocked: false,
+        specialTriggeredBy: null,
+        specialDisplayWidth: null,
+        forceStage3Visual: false
       }
 
       campItems.push(item)
@@ -1304,24 +1375,100 @@ class MainScene extends Phaser.Scene {
       return 0.2
     }
 
-    function updateEquipmentTexture(item) {
-      if (item.type !== 'equipment' || !item.equipmentSprite) return
+    function fitEquipmentSpriteTexture(item, textureKey, displayWidth) {
+      if (!item?.equipmentSprite) return
 
-      const stage = Math.max(1, getEquipmentStage(item.level))
-      if (item.equipmentTextureStage === stage) return
+      item.equipmentSprite.setTexture(textureKey)
 
-      item.equipmentTextureStage = stage
-      item.equipmentSprite.setTexture(`${item.key}_${stage}`)
-
-      const spriteConfig = EQUIPMENT_SPRITE_CONFIG[item.key]
-      if (spriteConfig && item.equipmentSprite.width > 0) {
+      if (item.equipmentSprite.width > 0 && displayWidth > 0) {
         const ratio = item.equipmentSprite.height / item.equipmentSprite.width
-        const displayWidth = getEquipmentDisplayWidth(item.key, stage)
         item.equipmentSprite.setDisplaySize(
           displayWidth,
           displayWidth * ratio
         )
       }
+    }
+
+    function updateEquipmentTexture(item, options = {}) {
+      if (item.type !== 'equipment' || !item.equipmentSprite) return
+
+      const { forceBaseTexture = false } = options
+      const stage = Math.max(1, getEquipmentStage(item.level))
+      const useBaseTexture = forceBaseTexture || item.forceStage3Visual
+
+      if (!useBaseTexture && item.specialObjectLocked && item.specialObjectKey) {
+        const textureKey = item.specialObjectKey
+
+        if (item.equipmentTextureStage === textureKey) return
+
+        item.equipmentTextureStage = textureKey
+        fitEquipmentSpriteTexture(
+          item,
+          textureKey,
+          item.specialDisplayWidth || getEquipmentDisplayWidth(item.key, stage)
+        )
+        return
+      }
+
+      const textureKey = `${item.key}_${stage}`
+      if (item.equipmentTextureStage === textureKey) return
+
+      item.equipmentTextureStage = textureKey
+      fitEquipmentSpriteTexture(
+        item,
+        textureKey,
+        getEquipmentDisplayWidth(item.key, stage)
+      )
+    }
+
+    function getSpecialEquipmentBranch(character, equipment) {
+      if (!character || !equipment) return null
+      return SPECIAL_EQUIPMENT_BRANCHES[`${character.id}-${equipment.id}`] || null
+    }
+
+    function showSpecialEquipmentPopup(equipment, branch) {
+      const text = scene.add.text(
+        equipment.container.x,
+        equipment.container.y - 118,
+        branch.label,
+        {
+          fontSize: '20px',
+          color: '#fff7d8',
+          stroke: '#3d2a15',
+          strokeThickness: 5,
+          fontStyle: 'bold'
+        }
+      ).setOrigin(0.5).setDepth(430)
+
+      scene.tweens.add({
+        targets: text,
+        y: text.y - 18,
+        alpha: 0,
+        duration: 700,
+        ease: 'Sine.Out',
+        onComplete: () => {
+          if (text && text.active) text.destroy()
+        }
+      })
+    }
+
+    function tryApplySpecialEquipmentBranch(character, equipment) {
+      if (!character || !equipment || equipment.type !== 'equipment') return false
+      if (hiddenSequenceRunning || hiddenEndingVisualLocked) return false
+      if (equipment.specialObjectLocked) return false
+
+      const branch = getSpecialEquipmentBranch(character, equipment)
+      if (!branch) return false
+
+      equipment.specialObjectLocked = true
+      equipment.specialObjectKey = branch.textureKey
+      equipment.specialObjectLabel = branch.label
+      equipment.specialTriggeredBy = `${character.id}-${equipment.id}`
+      equipment.specialDisplayWidth = branch.width || getEquipmentDisplayWidth(equipment.key, getEquipmentStage(equipment.level))
+
+      updateEquipmentTexture(equipment)
+      showSpecialEquipmentPopup(equipment, branch)
+      return true
     }
 
     // =====================================================
@@ -2231,6 +2378,7 @@ class MainScene extends Phaser.Scene {
           pulseEquipment(equipment)
           showInteractionEffect(equipment, interaction)
           spawnCharacterInteractionParticles(character, equipment)
+          tryApplySpecialEquipmentBranch(character, equipment)
 
           scene.time.delayedCall(260, () => {
             // 작업이 끝나면 다시 앞모습 idle로 돌아온 뒤 ! 반응.
@@ -3912,7 +4060,9 @@ class MainScene extends Phaser.Scene {
     function forceEquipmentToStage3(equipment) {
       equipment.selected = true
       equipment.level = Math.max(equipment.level, HIDDEN_STAGE3_LEVEL)
-      updateEquipmentTexture(equipment)
+      // 히든 엔딩에서는 특수 분기 잠금을 무시하고 전 장비를 공통 Stage 3로 맞춘다.
+      equipment.forceStage3Visual = true
+      updateEquipmentTexture(equipment, { forceBaseTexture: true })
       refreshVisuals()
     }
 
