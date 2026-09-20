@@ -13,7 +13,7 @@ const CHARACTER_ASSET_BASE = `${ASSET_BASE}/characters`
 const BACKGROUND_ASSET_BASE = ASSET_BASE
 const UI_ICON_ASSET_BASE = `${ASSET_BASE}/ui`
 
-const EQUIPMENT_ASSET_VERSION = '3'
+const EQUIPMENT_ASSET_VERSION = '4'
 const CHARACTER_ASSET_VERSION = '7'
 const BACKGROUND_ASSET_VERSION = '5'
 const UI_ICON_ASSET_VERSION = '4'
@@ -104,6 +104,94 @@ const SPECIAL_EQUIPMENT_BRANCHES = {
     textureKey: 'shrine_telescope',
     label: '무녀 망원경',
     width: 178
+  }
+}
+
+// =====================================================
+// 특수 오브젝트 위에 누적되는 2차 프롭
+// 스크린샷에서 확인한 실제 파일명과 1:1로 맞춘다.
+// 모두 public/assets/equipment/ 아래에 둔다.
+// =====================================================
+const SECONDARY_PROP_FILES = {
+  moon_orb: 'moon_orb.png',
+  potion_rack: 'potion_rack.png',
+  alchemy_props: 'alchemy_props.png',
+  bedding_set: 'bedding_set.png',
+  cooked_food: 'cooked_food.png',
+  organized_lab_box: 'organized_lab_box.png',
+  small_ghost: 'small_ghost.png',
+  talisman_bundle: 'talisman_bundle.png'
+}
+
+// key = 현재 고정된 특수 오브젝트 + '-' + 뒤늦게 상호작용한 캐릭터 ID
+// 캐릭터 ID: 1 무녀 / 2 메이드 / 3 유령 / 4 연금술사
+//
+// 한 번 생성된 프롭도 잠금 처리되어 이후 다른 조건으로 바뀌지 않는다.
+// 히든 엔딩에서는 전부 제거한 뒤 공통 Stage 3로 간다.
+const SECONDARY_PROP_BRANCHES = {
+  'alchemy_cauldron-2': {
+    textureKey: 'cooked_food',
+    label: '요리 완성',
+    x: 82,
+    y: 38,
+    width: 80,
+    behindMain: false
+  },
+  'ghost_lantern-1': {
+    textureKey: 'talisman_bundle',
+    label: '부적 장식',
+    x: 18,
+    y: -2,
+    width: 56,
+    behindMain: false
+  },
+  'ghost_tent-2': {
+    textureKey: 'bedding_set',
+    label: '침구 정리',
+    x: 88,
+    y: 34,
+    width: 96,
+    behindMain: false
+  },
+  'ritual_brazier-4': {
+    textureKey: 'alchemy_props',
+    label: '연금 도구',
+    x: 82,
+    y: 38,
+    width: 80,
+    behindMain: false
+  },
+  'glamping_tent-3': {
+    textureKey: 'small_ghost',
+    label: '유령 손님',
+    x: 76,
+    y: -2,
+    width: 64,
+    behindMain: true
+  },
+  'mobile_alchemy_lab-2': {
+    textureKey: 'organized_lab_box',
+    label: '연구실 정리',
+    x: 96,
+    y: 48,
+    width: 96,
+    behindMain: false
+  },
+  'maid_campervan-4': {
+    textureKey: 'potion_rack',
+    label: '포션 랙',
+    x: 88,
+    y: 2,
+    width: 96,
+    behindMain: false
+  },
+  'shrine_telescope-3': {
+    textureKey: 'moon_orb',
+    label: '달빛 구슬',
+    x: 56,
+    y: -52,
+    width: 64,
+    behindMain: false
   }
 }
 
@@ -204,6 +292,13 @@ class MainScene extends Phaser.Scene {
     })
 
     Object.entries(SPECIAL_EQUIPMENT_FILES).forEach(([key, filename]) => {
+      this.load.image(
+        key,
+        `${EQUIPMENT_ASSET_BASE}/${filename}?v=${EQUIPMENT_ASSET_VERSION}`
+      )
+    })
+
+    Object.entries(SECONDARY_PROP_FILES).forEach(([key, filename]) => {
       this.load.image(
         key,
         `${EQUIPMENT_ASSET_BASE}/${filename}?v=${EQUIPMENT_ASSET_VERSION}`
@@ -524,23 +619,25 @@ class MainScene extends Phaser.Scene {
     // 방금 사용한 장비 근처에서 길을 비운 채 대기한다.
     // =====================================================
     const POST_ACTION_IDLE_POINTS = {
-      '5-2': { x: 545, y: 430 },  // 캠핑카 - 메이드
-      '5-4': { x: 520, y: 490 },  // 캠핑카 - 연금술사
+      // 상호작용이 끝난 뒤 캐릭터가 오브젝트 실루엣을 가리지 않도록
+      // 기존보다 확실히 바깥쪽으로 빠지는 대기 지점.
+      '5-2': { x: 250, y: 520 },  // 캠핑카 - 메이드
+      '5-4': { x: 675, y: 540 },  // 캠핑카 - 연금술사
 
-      '6-1': { x: 845, y: 560 },  // 캠프파이어 - 무녀
-      '6-4': { x: 1070, y: 565 }, // 캠프파이어 - 연금술사
+      '6-1': { x: 755, y: 655 },  // 캠프파이어 - 무녀
+      '6-4': { x: 1160, y: 675 }, // 캠프파이어 - 연금술사
 
-      '7-2': { x: 1345, y: 505 }, // 텐트 - 메이드
-      '7-3': { x: 1490, y: 520 }, // 텐트 - 유령
+      '7-2': { x: 1190, y: 555 }, // 텐트 - 메이드
+      '7-3': { x: 1700, y: 505 }, // 텐트 - 유령
 
-      '8-2': { x: 1135, y: 670 }, // 조리도구 - 메이드
-      '8-4': { x: 1320, y: 680 }, // 조리도구 - 연금술사
+      '8-2': { x: 1035, y: 725 }, // 조리도구 - 메이드
+      '8-4': { x: 1450, y: 725 }, // 조리도구 - 연금술사
 
-      '9-1': { x: 1455, y: 650 }, // 랜턴 - 무녀
-      '9-3': { x: 1580, y: 675 }, // 랜턴 - 유령
+      '9-1': { x: 1360, y: 735 }, // 랜턴 - 무녀
+      '9-3': { x: 1740, y: 735 }, // 랜턴 - 유령
 
-      '10-1': { x: 925, y: 455 }, // 망원경 - 무녀
-      '10-3': { x: 1120, y: 465 } // 망원경 - 유령
+      '10-1': { x: 835, y: 420 }, // 망원경 - 무녀
+      '10-3': { x: 1245, y: 420 } // 망원경 - 유령
     }
 
     // =====================================================
@@ -1347,7 +1444,12 @@ class MainScene extends Phaser.Scene {
         specialObjectLocked: false,
         specialTriggeredBy: null,
         specialDisplayWidth: null,
-        forceStage3Visual: false
+        forceStage3Visual: false,
+        secondaryPropLocked: false,
+        secondaryPropKey: null,
+        secondaryPropLabel: null,
+        secondaryPropTriggeredBy: null,
+        secondaryPropSprite: null
       }
 
       campItems.push(item)
@@ -1464,11 +1566,126 @@ class MainScene extends Phaser.Scene {
       equipment.specialObjectKey = branch.textureKey
       equipment.specialObjectLabel = branch.label
       equipment.specialTriggeredBy = `${character.id}-${equipment.id}`
-      equipment.specialDisplayWidth = branch.width || getEquipmentDisplayWidth(equipment.key, getEquipmentStage(equipment.level))
+      equipment.specialDisplayWidth =
+        branch.width ||
+        getEquipmentDisplayWidth(
+          equipment.key,
+          getEquipmentStage(equipment.level)
+        )
 
       updateEquipmentTexture(equipment)
       showSpecialEquipmentPopup(equipment, branch)
       return true
+    }
+
+    function getSecondaryPropBranch(character, equipment) {
+      if (!character || !equipment?.specialObjectKey) return null
+
+      return SECONDARY_PROP_BRANCHES[
+        `${equipment.specialObjectKey}-${character.id}`
+      ] || null
+    }
+
+    function showSecondaryPropPopup(equipment, branch) {
+      showFloatingText(
+        equipment.container.x,
+        equipment.container.y - 110,
+        `+ ${branch.label}`,
+        {
+          fontSize: '19px',
+          color: '#fff0a8',
+          duration: 720,
+          rise: 30
+        }
+      )
+    }
+
+    function addSecondaryPropSprite(equipment, branch) {
+      const prop = scene.add.image(
+        branch.x ?? 0,
+        branch.y ?? 0,
+        branch.textureKey
+      )
+
+      if (prop.width > 0 && branch.width > 0) {
+        const ratio = prop.height / prop.width
+        prop.setDisplaySize(
+          branch.width,
+          branch.width * ratio
+        )
+      }
+
+      prop.setAlpha(0)
+      prop.setScale(0.55)
+
+      equipment.container.add(prop)
+
+      // 기본적으로 메인 오브젝트 위에 놓되,
+      // small_ghost처럼 뒤에서 빼꼼해야 하는 프롭만 뒤로 보낸다.
+      if (branch.behindMain) {
+        equipment.container.moveBelow(prop, equipment.equipmentSprite)
+      } else {
+        equipment.container.bringToTop(prop)
+        // 상태 텍스트는 항상 프롭보다 위에 유지.
+        equipment.container.bringToTop(equipment.statusText)
+      }
+
+      equipment.secondaryPropSprite = prop
+
+      scene.tweens.add({
+        targets: prop,
+        alpha: 1,
+        scaleX: 1,
+        scaleY: 1,
+        duration: 260,
+        ease: 'Back.Out'
+      })
+
+      return prop
+    }
+
+    function tryApplySecondaryProp(character, equipment) {
+      if (!character || !equipment || equipment.type !== 'equipment') {
+        return false
+      }
+
+      if (hiddenSequenceRunning || hiddenEndingVisualLocked) return false
+
+      // 메인 특수 오브젝트가 먼저 확정되어 있어야 한다.
+      if (!equipment.specialObjectLocked || !equipment.specialObjectKey) {
+        return false
+      }
+
+      // 한 번 나온 프롭도 영구 고정.
+      if (equipment.secondaryPropLocked) return false
+
+      const branch = getSecondaryPropBranch(character, equipment)
+      if (!branch) return false
+
+      equipment.secondaryPropLocked = true
+      equipment.secondaryPropKey = branch.textureKey
+      equipment.secondaryPropLabel = branch.label
+      equipment.secondaryPropTriggeredBy =
+        `${equipment.specialObjectKey}-${character.id}`
+
+      addSecondaryPropSprite(equipment, branch)
+      showSecondaryPropPopup(equipment, branch)
+
+      return true
+    }
+
+    function removeSecondaryProp(equipment) {
+      if (!equipment) return
+
+      if (equipment.secondaryPropSprite?.active) {
+        equipment.secondaryPropSprite.destroy()
+      }
+
+      equipment.secondaryPropSprite = null
+      equipment.secondaryPropLocked = false
+      equipment.secondaryPropKey = null
+      equipment.secondaryPropLabel = null
+      equipment.secondaryPropTriggeredBy = null
     }
 
     // =====================================================
@@ -1823,6 +2040,7 @@ class MainScene extends Phaser.Scene {
     function setCharacterIdle(character) {
       character.wanderRunning = false
       character.atHome = true
+      character.container.setDepth(300)
       character.currentNodeIndex = null
       character.nextNodeIndex = null
       character.plannedTarget = null
@@ -1889,7 +2107,14 @@ class MainScene extends Phaser.Scene {
       releaseActionReservation(character)
       const point = getPostActionIdlePoint(character, equipment)
       character.atHome = false
+
       teleportCharacterToPoint(character, point, success => {
+        if (success) {
+          // 작업이 끝난 캐릭터는 장비보다 뒤 레이어에서 대기한다.
+          // 장비 depth=60, parked character depth=50.
+          character.container.setDepth(50)
+        }
+
         character.statusText.setText(character.selected ? 'ACTIVE' : '대기중')
         onComplete(success)
       })
@@ -2309,6 +2534,71 @@ class MainScene extends Phaser.Scene {
       }
     }
 
+    function levelUpEquipmentFromInteraction(equipment) {
+      if (!equipment || equipment.type !== 'equipment') return false
+      if (!equipment.selected || equipment.level >= 10) return false
+
+      const oldLevel = equipment.level
+      const oldStage = getEquipmentStage(oldLevel)
+
+      equipment.level = Math.min(10, equipment.level + 1)
+
+      const newStage = getEquipmentStage(equipment.level)
+
+      // 특수 오브젝트가 잠겨 있으면 특수 이미지는 그대로 유지하고
+      // 내부 레벨/상태만 올린다.
+      // 일반 오브젝트라면 Stage 경계에서 자동으로 다음 이미지로 바뀐다.
+      updateEquipmentTexture(equipment)
+      equipment.statusText.setText(
+        `LV.${equipment.level} / STAGE ${newStage}`
+      )
+
+      showFloatingText(
+        equipment.container.x,
+        equipment.container.y - 122,
+        `LEVEL UP!  ${oldLevel} → ${equipment.level}`,
+        {
+          fontSize: '18px',
+          color: '#fff3a6',
+          duration: 720,
+          rise: 32
+        }
+      )
+
+      if (newStage > oldStage) {
+        showFloatingText(
+          equipment.container.x,
+          equipment.container.y - 150,
+          `STAGE ${newStage}!`,
+          {
+            fontSize: '21px',
+            color: '#ffffff',
+            duration: 820,
+            rise: 38
+          }
+        )
+
+        const baseScale = getEquipmentScale(equipment.level)
+
+        scene.tweens.add({
+          targets: equipment.container,
+          scaleX: baseScale * 1.12,
+          scaleY: baseScale * 1.12,
+          duration: 150,
+          yoyo: true,
+          repeat: 1,
+          ease: 'Back.Out',
+          onComplete: () => {
+            if (equipment.container?.active) {
+              equipment.container.setScale(baseScale)
+            }
+          }
+        })
+      }
+
+      return true
+    }
+
     function pulseEquipment(equipment, onComplete = null) {
       const baseScale = getEquipmentScale(equipment.level)
 
@@ -2378,7 +2668,22 @@ class MainScene extends Phaser.Scene {
           pulseEquipment(equipment)
           showInteractionEffect(equipment, interaction)
           spawnCharacterInteractionParticles(character, equipment)
-          tryApplySpecialEquipmentBranch(character, equipment)
+
+          // 캐릭터가 실제로 장비와 상호작용했으면 반드시 +1 레벨.
+          // 한 장비에 캐릭터 2명이 연속 상호작용하면 각각 +1씩 오른다.
+          levelUpEquipmentFromInteraction(equipment)
+
+          const hadSpecialObject = equipment.specialObjectLocked
+
+          if (hadSpecialObject) {
+            // 이미 특수 오브젝트가 고정돼 있으면
+            // 다른 대응 캐릭터의 행동은 메인 이미지를 바꾸지 않고
+            // 작은 2차 프롭을 누적한다.
+            tryApplySecondaryProp(character, equipment)
+          } else {
+            // 최초 대응 캐릭터만 메인 특수 오브젝트를 확정한다.
+            tryApplySpecialEquipmentBranch(character, equipment)
+          }
 
           scene.time.delayedCall(260, () => {
             // 작업이 끝나면 다시 앞모습 idle로 돌아온 뒤 ! 반응.
@@ -2508,6 +2813,9 @@ class MainScene extends Phaser.Scene {
     }
 
     function moveCharacterToActionSlot(character, equipment, onArrived) {
+      // 대기 중에는 장비 뒤에 있었으므로, 새 작업 시작 시 다시 전경으로 올린다.
+      character.container.setDepth(300)
+
       const slot = reserveActionSlot(character, equipment.id)
       if (!slot) {
         onArrived(false)
@@ -4060,7 +4368,11 @@ class MainScene extends Phaser.Scene {
     function forceEquipmentToStage3(equipment) {
       equipment.selected = true
       equipment.level = Math.max(equipment.level, HIDDEN_STAGE3_LEVEL)
-      // 히든 엔딩에서는 특수 분기 잠금을 무시하고 전 장비를 공통 Stage 3로 맞춘다.
+
+      // 히든 엔딩에서는 누적 프롭을 지우고,
+      // 특수 오브젝트 잠금을 무시한 채 전 장비를 공통 Stage 3로 맞춘다.
+      removeSecondaryProp(equipment)
+
       equipment.forceStage3Visual = true
       updateEquipmentTexture(equipment, { forceBaseTexture: true })
       refreshVisuals()
@@ -4266,9 +4578,9 @@ class MainScene extends Phaser.Scene {
     // 1) 선택한 요소 등장/활성
     // 2) 이동
     // 3) 행동
-    // 4) 장비 반응
+    // 4) 장비 반응 + 상호작용한 장비 즉시 +1 레벨
     // 5) !
-    // 6) 기존 장비 성장 + Stage 이미지 교체
+    // 6) 기존 장비의 턴 경과 성장 + Stage 이미지 교체
     // 7) 2초 후 입력 해제
     // =====================================================
     function runTurnSequence(item, pendingGrowth, sequenceToken) {
